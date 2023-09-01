@@ -14,14 +14,11 @@ shader_parameter/rotation = 0.0
 shader_parameter/screen_size = Vector2(150, 150)
 
 [node name="Textbox" type="TextureRect"]
-anchors_preset = 7
-anchor_left = 0.5
+anchors_preset = -1
 anchor_top = 1.0
-anchor_right = 0.5
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -640.0
 offset_top = -212.0
-offset_right = 640.0
 grow_horizontal = 2
 grow_vertical = 0
 texture = ExtResource("2")
@@ -65,15 +62,15 @@ offset_bottom = -12.0
 expand_mode = 1
 
 [node name="Nametag" type="Label" parent="."]
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 5
 anchor_left = 0.5
-anchor_top = 1.0
 anchor_right = 0.5
-anchor_bottom = 1.0
 offset_left = -368.0
-offset_top = -181.0
+offset_top = 31.0
 offset_right = -304.0
-offset_bottom = -156.0
+offset_bottom = 56.0
+grow_horizontal = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 8
 theme_override_fonts/font = ExtResource("1")

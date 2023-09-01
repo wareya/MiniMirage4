@@ -22,7 +22,7 @@ shader_parameter/screen_size = Vector2(150, 150)
 
 [node name="ChatTextbox" type="NinePatchRect"]
 material = SubResource("1")
-anchors_preset = -1
+anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5

@@ -55,7 +55,7 @@ func set_new_position(pos : Vector2):
 ##
 ## Async.
 func smooth_position(pos : Vector2, speed : float = 0.0):
-    await item_smooth_param_vec2(self, "position", pos, speed if speed > 0.0 else (CutsceneInstance.bg_move_speed if is_bg else CutsceneInstance.tachie_move_speed))
+    await CutsceneRect.item_smooth_param_vec2(self, "position", pos, speed if speed > 0.0 else (CutsceneInstance.bg_move_speed if is_bg else CutsceneInstance.tachie_move_speed))
 
 ## Set the scale for the given image.
 ##
@@ -67,7 +67,7 @@ func set_new_scale(new_scale : Vector2):
 ##
 ## Async.
 func smooth_scale(new_scale : Vector2, speed : float = 0.0):
-    await item_smooth_param_vec2(self, "scale", new_scale, speed if speed > 0.0 else (CutsceneInstance.bg_move_speed if is_bg else CutsceneInstance.tachie_move_speed))
+    await CutsceneRect.item_smooth_param_vec2(self, "scale", new_scale, speed if speed > 0.0 else (CutsceneInstance.bg_move_speed if is_bg else CutsceneInstance.tachie_move_speed))
 
 ## Set the texture for the given image.
 ##
@@ -99,24 +99,28 @@ static func item_transition(item : CanvasItem, property : String, start, end, sp
 # Used internally.
 # Async.
 static func item_hide(item : CanvasItem, speed : float):
-    await item_transition(item, "modulate:a", 1.0, 0.0, speed)
+    await CutsceneRect.item_transition(item, "modulate:a", 1.0, 0.0, speed)
 
 # Used internally.
 # Async.
 static func item_show(item : CanvasItem, speed : float):
-    await item_transition(item, "modulate:a", 0.0, 1.0, speed)
+    await CutsceneRect.item_transition(item, "modulate:a", 0.0, 1.0, speed)
 
 ## Hide the given image, playing a fade-out animation.
 ##
 ## Async.
 func fade_hide(speed : float = 0.0):
     speed = speed if speed > 0.0 else (CutsceneInstance.bg_fade_speed if is_bg else CutsceneInstance.tachie_fade_speed)
-    await item_transition(self, "modulate:a", 1.0, 0.0, speed)
+    await CutsceneRect.item_transition(self, "modulate:a", 1.0, 0.0, speed)
 
 ## Show the given image, playing a fade-in animation.
 ##
 ## Async.
 func fade_show(speed : float = 0.0):
     speed = speed if speed > 0.0 else (CutsceneInstance.bg_fade_speed if is_bg else CutsceneInstance.tachie_fade_speed)
-    await item_transition(self, "modulate:a", 0.0, 1.0, speed)
+    await CutsceneRect.item_transition(self, "modulate:a", 0.0, 1.0, speed)
     print("done fading item")
+
+func _process(delta : float):
+    material.set_shader_parameter("screen_size", get_parent().dummy_control.size)
+    
