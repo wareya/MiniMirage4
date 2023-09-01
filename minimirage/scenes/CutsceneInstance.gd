@@ -34,10 +34,10 @@ signal cutscene_finished
 
 ## Used to translate global world positions into the adjustment fractions used for positioning tachie and textboxes.
 static func globalpos_to_screen_fraction(vec : Vector2):
-    var viewport : Viewport = Engine.get_main_loop().get_root()
+    var viewport : SubViewport = Engine.get_main_loop().get_root()
     var size =  viewport.get_visible_rect().size
     var xform = viewport.canvas_transform
-    var local_vec = xform.xform(vec)
+    var local_vec = xform * (vec)
     var fraction_vec = (local_vec - size/2.0)/size.y*2.0
     return fraction_vec
 
@@ -49,186 +49,80 @@ static func cutscene_is_running():
 
 ## Sets the textbox and makes the cutscene instance start to type in the new text and wait for input.
 ##
-## To wait for the cutscene instance to get input from the user, use the following wait command:
-##
-## `yield(instance, "cutscene_continue")`
+##  Async. Example: `await my_cutscene_instance.set_text("Hello!!!")`
 func set_text(text : String):
     var label = current_textbox.get_node("Label")
     
+    label.bbcode_enabled = true
+    label.text = text
+    
     if current_textbox == chat_textbox:
-        var size = estimate_good_chat_size(text)
-        label.margin_left = _chat_textbox_alignment
+        label.offset_left = _chat_textbox_alignment
         chat_portrait.visible = false
+        
+        var size = estimate_good_chat_size()
         
         if chat_portrait.texture:
             chat_portrait.visible = true
-            label.margin_left += chat_portrait.rect_size.x + 16
-            size.x += chat_portrait.rect_size.x + 16
-            size.y = max(size.y, chat_portrait.rect_size.y)
-        
-        fix_chatbox_size(size)
+            label.offset_left += chat_portrait.size.x + 16
+            size.x += chat_portrait.size.x + 16
+            size.y = max(size.y, chat_portrait.size.y)
+            fix_chatbox_size(size)
+        else:
+            fix_chatbox_size(size)
     
     current_textbox.visible = true
     if current_textbox.modulate.a < 1.0:
         textbox_show()
     
-    label.bbcode_enabled = true
-    label.bbcode_text = text
     visible_characters = 0.0
-    if should_skip_anims() or should_use_instant_text():
+    if CutsceneInstance.should_skip_anims() or CutsceneInstance.should_use_instant_text():
         visible_characters = -1
     label.visible_characters = int(visible_characters)
+    
+    await cutscene_continue
 
 ## Clears the textbox.
 func clear_text():
     var label = current_textbox.get_node("Label")
     current_textbox.visible = true
     label.bbcode_enabled = true
-    label.bbcode_text = ""
+    label.text = ""
     label.visible_characters = -1
 
 var images : Dictionary = {}
 
-## Adds a tachie (standing sprite) to the scene, returning an image.
-##
-## Disclaimer: images are just TextureRects with special materials and signals attached.
-func add_tachie(texture : Texture) -> TextureRect:
-    var tr = TextureRect.new()
-    tr.expand = true
-    tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-    tr.texture = texture
-    tr.anchor_right = 1
-    tr.anchor_bottom = 1
-    tr.margin_right = 0
-    tr.margin_bottom = 0
-    add_child(tr)
+## Adds a tachie (standing sprite) to the scene, returning a CutsceneRect.
+func add_tachie(new_texture : Texture2D) -> CutsceneRect:
+    var rect = CutsceneRect.new()
+    rect.texture = new_texture
+    add_child(rect)
+    rect.material.set_shader_parameter("screen_size", dummy_control.size)
     
-    tr.material = preload("../shader/CutsceneImageMat.tres").duplicate()
-    tr.material.set_shader_param("is_background", false)
-    tr.material.set_shader_param("position", Vector2(0.0, 0.0))
-    tr.material.set_shader_param("scale", Vector2(1.0, 1.0))
-    tr.material.set_shader_param("rotation", 0.0)
-    tr.material.set_shader_param("screen_size", dummy_control.rect_size)
-    images[tr] = null
-    tr.add_user_signal("transition_finished")
-    
-    return tr
+    images[rect] = null
+    return rect
 
-## Adds a background to the scene, returning an image.
-##
-## Disclaimer: images are just TextureRects with special materials and signals attached.
-func add_background(texture : Texture) -> TextureRect:
-    var tr = add_tachie(texture)
-    tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-    tr.material.set_shader_param("is_background", true)
-    VisualServer.canvas_item_set_z_index(tr.get_canvas_item(), -1)
-    return tr
+## Adds a background to the scene, returning a CutsceneRect.
+func add_background(texture : Texture2D) -> CutsceneRect:
+    var rect = add_tachie(texture)
+    rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+    rect.material.set_shader_parameter("is_background", true)
+    RenderingServer.canvas_item_set_z_index(rect.get_canvas_item(), -1)
+    return rect
 
-# Used internally.
-static func image_smooth_param_vec2(tr : TextureRect, param : String, vec2 : Vector2, speed : float):
-    var start_vec2 : Vector2 = tr.material.get_shader_param(param)
-    
-    yield(Engine.get_main_loop(), "idle_frame")
-    if !is_instance_valid(tr):
-        return
-    
-    var time_passed = 0.0
-    while time_passed < 1.0:
-        var delta = Engine.get_main_loop().current_scene.get_process_delta_time()
-        time_passed = clamp(time_passed + delta * speed, 0.0, 1.0)
-        if should_skip_anims(): time_passed = 1.0
-        
-        var real_vec2 = start_vec2.linear_interpolate(vec2, smoothstep(0.0, 1.0, time_passed))
-        tr.material.set_shader_param(param, real_vec2)
-        
-        yield(Engine.get_main_loop(), "idle_frame")
-        if !is_instance_valid(tr):
-            return
-    
-    tr.emit_signal("transition_finished")
-
-# Used internally.
-static func image_is_bg(tr : TextureRect) -> bool:
-    return tr.material.get_shader_param("is_background")
-
-## Set the position for the given image.
-##
-## Positions are based on the height of the cutscene screen, with 1.0 representing
-## the distance from the center of the screen to the top or bottom.
-##
-## So, a position of Vector2(1.0, 0.0) is only about half way towards the right side
-## of a 16:9 screen.
-##
-## Applies instantly.
-static func image_set_position(tr : TextureRect, pos : Vector2):
-    tr.material.set_shader_param("position", pos)
-
-## Set the position for the given image smoothly. See `image_set_position` for more information.
-##
-## Wait instruction:
-##
-## `yield(image, "transition_finished")`
-static func image_smooth_position(tr : TextureRect, pos : Vector2, speed : float = 0.0):
-    image_smooth_param_vec2(tr, "position", pos, speed if speed > 0.0 else (bg_move_speed if image_is_bg(tr) else tachie_move_speed))
-
-## Set the scale for the given image.
-##
-## Applies instantly.
-static func image_set_scale(tr : TextureRect, scale : Vector2):
-    tr.material.set_shader_param("scale", scale)
-
-## Set the scale for the given image smoothly.
-##
-## Wait instruction:
-##
-## `yield(image, "transition_finished")`
-static func image_smooth_scale(tr : TextureRect, scale : Vector2, speed : float = 0.0):
-    image_smooth_param_vec2(tr, "scale", scale, speed if speed > 0.0 else (bg_move_speed if image_is_bg(tr) else tachie_move_speed))
-
-## Set the texture for the given image.
-##
-## Applies instantly.
-static func image_set_texture(tr : TextureRect, tex : Texture):
-    tr.texture = tex
-
-## Hide the given image, playing a fade-out animation.
-##
-## Wait instruction:
-##
-## `yield(image, "transition_finished")`
-static func image_hide(tr : TextureRect, speed : float = 0.0):
-    item_hide(tr, speed if speed > 0.0 else (bg_fade_speed if image_is_bg(tr) else tachie_fade_speed))
-
-## Show the given image, playing a fade-in animation.
-##
-## Wait instruction:
-##
-## `yield(image, "transition_finished")`
-static func image_show(tr : TextureRect, speed : float = 0.0):
-    item_show(tr, speed if speed > 0.0 else (bg_fade_speed if image_is_bg(tr) else tachie_fade_speed))
-
-signal textbox_transition_finished
 ## Hide the current text box, playing a fade-out animation.
 ##
-## Wait instruction:
-##
-## `yield(CutsceneInstance, "textbox_transition_finished")`
+## Async.
 func textbox_hide():
-    item_hide(current_textbox, textbox_fade_speed)
-    yield(current_textbox, "transition_finished")
+    await CutsceneRect.item_hide(current_textbox, textbox_fade_speed)
     chat_portrait.texture = null
     adv_portrait.texture = null
-    emit_signal("textbox_transition_finished")
 
 ## Show the current text box, playing a fade-in animation.
 ##
-## Wait instruction:
-##
-## `yield(CutsceneInstance, "textbox_transition_finished")`
+## Async.
 func textbox_show():
-    item_show(current_textbox, textbox_fade_speed)
-    yield(current_textbox, "transition_finished")
-    emit_signal("textbox_transition_finished")
+    await CutsceneRect.item_show(current_textbox, textbox_fade_speed)
 
 ## Switches to the ADV-style textbox.
 ##
@@ -240,21 +134,53 @@ func textbox_set_adv():
     chat_portrait.texture = null
     adv_portrait.texture = null
 
-func estimate_good_chat_size(text : String):
+# used internally.
+func estimate_good_chat_size():
     var ideal_ar = 2
-    var label : RichTextLabel = chat_textbox.get_node("Label")
-    var font : Font = label.get_font("normal_font")
-    var size = font.get_string_size(text)
-    var orig_size = size
+    
+    var label : RichTextLabel = (chat_textbox.get_node("Label") as RichTextLabel)
+    
+    var old_autowrap = label.autowrap_mode
+    var old_fit_content = label.fit_content
+    
+    var old_offset_top = label.offset_top
+    var old_offset_left = label.offset_left
+    var old_offset_right = label.offset_right
+    var old_offset_bottom = label.offset_bottom
+    
+    label.visible_characters = -1
+    label.autowrap_mode = TextServer.AUTOWRAP_OFF
+    label.fit_content = true
+    label.size.x = 0
+    label.size.y = 0
+    
+    var size = label.size
     
     if size.x / size.y > ideal_ar:
         var square_sidelen = sqrt(size.x * size.y)
-        size = font.get_wordwrap_string_size(text, square_sidelen*2.0)
+        label.autowrap_mode = old_autowrap
+        label.size.x = square_sidelen*2.0
+        label.size.y = 0
+        label.propagate_notification(RichTextLabel.NOTIFICATION_VISIBILITY_CHANGED)
+        if label.get_line_count() > 1:
+            var good_y = label.size.y
+            while label.size.y == good_y and label.size.x > 0:
+                label.size.x -= 5
+                label.propagate_notification(RichTextLabel.NOTIFICATION_VISIBILITY_CHANGED)
+            label.size.x += 5
+            label.propagate_notification(RichTextLabel.NOTIFICATION_VISIBILITY_CHANGED)
+            label.size.y = good_y
+        size = label.size
     
-    var line_count = size.y / orig_size.y
+    label.fit_content = old_fit_content
+    label.autowrap_mode = old_autowrap
     
-    size.y += 4 * line_count # 4 is the line spacing value, change this if you change line spacing in the chatbox's RichTextLabel
-    size.x += 5 # extra padding on the side just to help make sure it doesn't clip or wrap unnecessarily
+    label.offset_top = old_offset_top
+    label.offset_left = old_offset_left
+    label.offset_right = old_offset_right
+    label.offset_bottom = old_offset_bottom
+    
+    size.x += 1 # just to help make 100% sure it doesn't clip or wrap unnecessarily
     
     return size
 
@@ -264,22 +190,22 @@ var chat_orientation : String = "upleft"
 ## If in chat-bubble mode, set the face of the next textboxes. Pass `null` to clear it.
 ##
 ## Applies instantly.
-func chat_set_face(face : Texture, flipped : bool = false):
+func chat_set_face(face : Texture2D, flipped : bool = false):
     chat_portrait.texture = face
     if flipped:
-        chat_portrait.material.set_shader_param("scale", Vector2(-1.0, 1.0))
+        chat_portrait.material.set_shader_parameter("scale", Vector2(-1.0, 1.0))
     else:
-        chat_portrait.material.set_shader_param("scale", Vector2(1.0, 1.0))
+        chat_portrait.material.set_shader_parameter("scale", Vector2(1.0, 1.0))
 
 ## If in ADV mode, set the face of the next textboxes. Pass `null` to clear it.
 ##
 ## Applies instantly.
-func adv_set_face(face : Texture, flipped : bool = false):
+func adv_set_face(face : Texture2D, flipped : bool = false):
     adv_portrait.texture = face
     if flipped:
-        adv_portrait.material.set_shader_param("scale", Vector2(-1.0, 1.0))
+        adv_portrait.material.set_shader_parameter("scale", Vector2(-1.0, 1.0))
     else:
-        adv_portrait.material.set_shader_param("scale", Vector2(1.0, 1.0))
+        adv_portrait.material.set_shader_parameter("scale", Vector2(1.0, 1.0))
 
 ## Switches to the chat-bubble-style textbox.
 ##
@@ -303,108 +229,79 @@ func set_nametag(tag : String):
 
 ## Used internally.
 ##
-## However, if the chatbox size for a given message is too small, you can use this function to override it.
+## However, if the automatic chatbox size for a given message is too small, you can use this function to override it.
 func fix_chatbox_size(size : Vector2):
     var label : RichTextLabel = chat_textbox.get_node("Label")
-    var outer_margin_x = label.margin_left - label.margin_right
-    var outer_margin_y = label.margin_top - label.margin_bottom
+    var outer_margin_x = label.offset_left - label.offset_right
+    var outer_margin_y = label.offset_top - label.offset_bottom
     
     if chat_portrait.texture:
-        outer_margin_x -=  chat_portrait.rect_size.x
+        outer_margin_x -= chat_portrait.size.x
     
     size += Vector2(outer_margin_x, outer_margin_y)
     
-    var center = dummy_control.rect_size/2
-    var offset = -size/2
+    var center = dummy_control.size/2
+    var new_offset = -size/2
     
     if chat_orientation == "upleft":
-        chat_textbox.material.set_shader_param("scale", Vector2(1.0, 1.0))
-        offset = Vector2(0, 0)
+        chat_textbox.material.set_shader_parameter("scale", Vector2(1.0, 1.0))
+        new_offset = Vector2(0, 0)
     elif chat_orientation == "upright":
-        chat_textbox.material.set_shader_param("scale", Vector2(-1.0, 1.0))
-        offset = Vector2(-size.x, 0)
+        chat_textbox.material.set_shader_parameter("scale", Vector2(-1.0, 1.0))
+        new_offset = Vector2(-size.x, 0)
     elif chat_orientation == "downleft":
-        chat_textbox.material.set_shader_param("scale", Vector2(1.0, -1.0))
-        offset = Vector2(0, -size.y)
+        chat_textbox.material.set_shader_parameter("scale", Vector2(1.0, -1.0))
+        new_offset = Vector2(0, -size.y)
     elif chat_orientation == "downright":
-        chat_textbox.material.set_shader_param("scale", Vector2(-1.0, -1.0))
-        offset = -size
+        chat_textbox.material.set_shader_parameter("scale", Vector2(-1.0, -1.0))
+        new_offset = -size
     
-    var new_pos = center + offset + chat_pos*0.5*dummy_control.rect_size.y
+    var new_pos = center + new_offset + chat_pos*0.5*dummy_control.size.y
     
-    chat_textbox.rect_position = new_pos
-    chat_textbox.rect_size = size
+    chat_textbox.position = new_pos
+    chat_textbox.size = size
     
-    chat_textbox.material.set_shader_param("screen_size", size)
+    chat_textbox.material.set_shader_parameter("screen_size", size)
 
 ## Destroy an image, removing it from the scene and freeing its memory.
 ##
 ## The underlying texture will continue to exist until you stop using it (write `null` to whatever variable contains it). If you don't have the texture in a variable anywhere, then it will be freed immediately.
-func image_destroy(tr : TextureRect):
-    if tr in images:
-        var _unused = images.erase(tr)
-    if tr.get_parent():
-        tr.get_parent().remove_child(tr)
-    if is_instance_valid(tr):
-        tr.queue_free()
+func image_destroy(rect : CutsceneRect):
+    if rect in images:
+        var _unused = images.erase(rect)
+    if rect.get_parent():
+        rect.get_parent().remove_child(rect)
+    if is_instance_valid(rect):
+        rect.queue_free()
 
-class MultiSignalWaiter extends Reference:
+class MultiAsyncAwaiter extends RefCounted:
     signal all_finished
     var count : int = 0
-    func connectify(obj, what):
+    func connectify(callable : Callable):
         count += 1
-        yield(obj, what)
+        await callable.call()
         count -= 1
         if count == 0:
-            emit_signal("all_finished")
+            all_finished.emit()
 
 ## Call at the end of the cutscene to ensure proper cleanup.
 func finish():
-    var images_to_wait = []
+    var funcs_to_wait = []
+    # .call() on async functions is to work around a godot 4.0/4.1 bug:
+    # https://github.com/godotengine/godot-proposals/issues/3469
+    
+    var waiter : MultiAsyncAwaiter = MultiAsyncAwaiter.new()
     for image in images:
         if image.modulate.a > 0.0 and is_instance_valid(image):
-            image_hide(image)
-            images_to_wait.push_back(image)
-    textbox_hide()
+            waiter.connectify(image.fade_hide)
+    waiter.connectify(textbox_hide)
     
-    var waiter : MultiSignalWaiter = MultiSignalWaiter.new()
-    for image in images_to_wait:
-        waiter.connectify(image, "transition_finished")
-    waiter.connectify(self, "textbox_transition_finished")
-    yield(waiter, "all_finished")
+    await waiter.all_finished
+    
+    images = {}
     
     queue_free()
-    emit_signal("cutscene_finished")
-
-# Used internally.
-static func item_transition(tr : CanvasItem, property : String, start, end, speed):
-    tr.set_indexed(property, start)
-    
-    yield(Engine.get_main_loop(), "idle_frame")
-    if !is_instance_valid(tr):
-        return
-    
-    var time_passed = 0.0
-    while time_passed < 1.0:
-        var delta = Engine.get_main_loop().current_scene.get_process_delta_time()
-        time_passed = clamp(time_passed + delta * speed, 0.0, 1.0)
-        if should_skip_anims(): time_passed = 1.0
-        
-        tr.set_indexed(property, smoothstep(start, end, time_passed))
-        
-        yield(Engine.get_main_loop(), "idle_frame")
-        if !is_instance_valid(tr):
-            return
-    
-    tr.emit_signal("transition_finished")
-
-# Used internally.
-static func item_hide(tr : CanvasItem, speed : float):
-    item_transition(tr, "modulate:a", 1.0, 0.0, speed)
-
-# Used internally.
-static func item_show(tr : CanvasItem, speed : float):
-    item_transition(tr, "modulate:a", 0.0, 1.0, speed)
+    cutscene_finished.emit()
 
 # _____________________________________________
 # |                                           |
@@ -426,47 +323,45 @@ func _ready():
     add_child(dummy_control)
     dummy_control.anchor_right = 1
     dummy_control.anchor_bottom = 1
-    dummy_control.margin_right = 0
-    dummy_control.margin_bottom = 0
+    dummy_control.offset_right = 0
+    dummy_control.offset_bottom = 0
     
     add_to_group("CutsceneInstance")
     
-    adv_textbox = preload("Textbox.tscn").instance()
-    chat_textbox = preload("ChatTextbox.tscn").instance()
+    adv_textbox = preload("Textbox.tscn").instantiate()
+    chat_textbox = preload("ChatTextbox.tscn").instantiate()
     add_child(adv_textbox)
     add_child(chat_textbox)
     
-    adv_textbox.add_user_signal("transition_finished")
     adv_textbox.modulate.a = 0.0
-    chat_textbox.add_user_signal("transition_finished")
     chat_textbox.modulate.a = 0.0
-    _chat_textbox_alignment = chat_textbox.get_node("Label").margin_left
+    _chat_textbox_alignment = chat_textbox.get_node("Label").offset_left
     chat_portrait = chat_textbox.get_node("Portrait")
     adv_portrait = adv_textbox.get_node("Portrait")
     
     current_textbox = adv_textbox
     
-    VisualServer.canvas_item_set_z_index(adv_textbox.get_canvas_item(), 10)
-    VisualServer.canvas_item_set_z_index(chat_textbox.get_canvas_item(), 10)
+    RenderingServer.canvas_item_set_z_index(adv_textbox.get_canvas_item(), 10)
+    RenderingServer.canvas_item_set_z_index(chat_textbox.get_canvas_item(), 10)
 
 # Returns whether the CutsceneInstance intends to advance the cutscene, based on user input.
 static func should_advance_input():
     var custom = false
-    if InputMap.get_action_list("cutscene_advance").size() > 0:
+    if InputMap.action_get_events("cutscene_advance").size() > 0:
         custom = Input.is_action_just_pressed("cutscene_advance")
     return custom or Input.is_action_just_pressed("ui_accept")
 
 # Returns whether the CutsceneInstance intends to skip animations, based on user input.
 static func should_use_instant_text():
     var custom = false
-    if InputMap.get_action_list("cutscene_instant_text").size() > 0:
+    if InputMap.action_get_events("cutscene_instant_text").size() > 0:
         custom = Input.is_action_just_pressed("cutscene_instant_text")
     return custom or Input.is_action_pressed("ui_cancel")
 
 # Returns whether the CutsceneInstance intends to make text come in instantly, based on user input.
 static func should_skip_anims():
     var custom = false
-    if InputMap.get_action_list("cutscene_skip").size() > 0:
+    if InputMap.action_get_events("cutscene_skip").size() > 0:
         custom = Input.is_action_pressed("cutscene_skip")
     return custom or should_advance_input()
 
@@ -475,13 +370,13 @@ var skip_timer : float = 0.0
 func _process(delta):
     var label = current_textbox.get_node("Label")
     if label.is_visible_in_tree() and current_textbox.modulate.a == 1.0:
-        if should_use_instant_text():
+        if CutsceneInstance.should_use_instant_text():
             visible_characters = label.get_total_character_count()
         
         if visible_characters >= 0.0 and visible_characters < label.get_total_character_count():
             visible_characters += delta * typein_speed
         
-        if should_skip_anims():
+        if CutsceneInstance.should_skip_anims():
             skip_timer += delta
         else:
             skip_timer = 0.0
@@ -490,7 +385,7 @@ func _process(delta):
         
         var do_continue = false
         
-        if should_advance_input() or do_skip:
+        if CutsceneInstance.should_advance_input() or do_skip:
             if do_skip:
                 visible_characters = label.get_total_character_count()
                 do_continue = true
@@ -506,9 +401,9 @@ func _process(delta):
         chat_textbox.get_node("Nametag").visible_characters = -1
         
         if do_continue:
-            if should_advance_input():
-                yield(Engine.get_main_loop(), "idle_frame")
-            emit_signal("cutscene_continue")
+            if CutsceneInstance.should_advance_input():
+                await Engine.get_main_loop().process_frame
+            cutscene_continue.emit()
     else:
         label.visible_characters = 0
         adv_textbox.get_node("Nametag").visible_characters = 0

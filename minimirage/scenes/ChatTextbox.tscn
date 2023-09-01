@@ -1,65 +1,80 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=6 format=3 uid="uid://dthgepjledkba"]
 
-[ext_resource path="res://minimirage/art/textbox_chat.png" type="Texture" id=1]
-[ext_resource path="res://minimirage/font/Font.tres" type="DynamicFont" id=2]
-[ext_resource path="res://minimirage/shader/CutsceneImageShader.gdshader" type="Shader" id=3]
+[ext_resource type="Texture2D" uid="uid://b845v4c2opq44" path="res://minimirage/art/textbox_chat.png" id="1"]
+[ext_resource type="FontFile" uid="uid://e3bb4w7yv6ja" path="res://minimirage/font/Font.tres" id="2"]
+[ext_resource type="Shader" path="res://minimirage/shader/CutsceneImageShader.gdshader" id="3"]
 
-[sub_resource type="ShaderMaterial" id=1]
-shader = ExtResource( 3 )
-shader_param/is_background = false
-shader_param/position = Vector2( 0, 0 )
-shader_param/scale = Vector2( 1, 1 )
-shader_param/rotation = 0.0
-shader_param/screen_size = Vector2( 342, 202 )
+[sub_resource type="ShaderMaterial" id="1"]
+shader = ExtResource("3")
+shader_parameter/is_background = false
+shader_parameter/position = Vector2(0, 0)
+shader_parameter/scale = Vector2(1, 1)
+shader_parameter/rotation = 0.0
+shader_parameter/screen_size = Vector2(342, 202)
 
-[sub_resource type="ShaderMaterial" id=2]
-shader = ExtResource( 3 )
-shader_param/is_background = false
-shader_param/position = Vector2( 0, 0 )
-shader_param/scale = Vector2( 1, 1 )
-shader_param/rotation = 0.0
-shader_param/screen_size = Vector2( 150, 150 )
+[sub_resource type="ShaderMaterial" id="2"]
+shader = ExtResource("3")
+shader_parameter/is_background = false
+shader_parameter/position = Vector2(0, 0)
+shader_parameter/scale = Vector2(1, 1)
+shader_parameter/rotation = 0.0
+shader_parameter/screen_size = Vector2(150, 150)
 
 [node name="ChatTextbox" type="NinePatchRect"]
-material = SubResource( 1 )
+material = SubResource("1")
+anchors_preset = -1
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-margin_right = 342.0
-margin_bottom = 242.0
-texture = ExtResource( 1 )
+offset_right = 257.0
+offset_bottom = 179.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1")
 patch_margin_left = 48
 patch_margin_top = 40
 patch_margin_right = 14
 patch_margin_bottom = 40
 
 [node name="Label" type="RichTextLabel" parent="."]
+clip_contents = false
+layout_mode = 1
+anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 19.0
-margin_top = 46.0
-margin_right = -19.0
-margin_bottom = -46.0
-rect_clip_content = false
-custom_constants/line_separation = 4
-custom_fonts/normal_font = ExtResource( 2 )
+offset_left = 19.0
+offset_top = 46.0
+offset_right = -19.0
+offset_bottom = -46.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/line_separation = 4
+theme_override_constants/outline_size = 8
+theme_override_fonts/normal_font = ExtResource("2")
+theme_override_font_sizes/normal_font_size = 24
 bbcode_enabled = true
-bbcode_text = "From here to the ends of the earth, I will be there!"
 text = "From here to the ends of the earth, I will be there!"
 scroll_active = false
+visible_characters_behavior = 1
 
 [node name="Portrait" type="TextureRect" parent="."]
-material = SubResource( 2 )
-margin_left = 19.0
-margin_top = 46.0
-margin_right = 169.0
-margin_bottom = 196.0
-expand = true
+texture_filter = 6
+material = SubResource("2")
+layout_mode = 1
+anchors_preset = -1
+offset_left = 19.0
+offset_top = 46.0
+offset_right = 169.0
+offset_bottom = 196.0
+expand_mode = 1
 
 [node name="Nametag" type="Label" parent="."]
-margin_left = 44.0
-margin_top = 3.0
-margin_right = 108.0
-margin_bottom = 28.0
-custom_fonts/font = ExtResource( 2 )
+layout_mode = 0
+offset_left = 44.0
+offset_top = 3.0
+offset_right = 108.0
+offset_bottom = 28.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 24

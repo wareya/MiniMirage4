@@ -1,68 +1,80 @@
-[gd_scene load_steps=5 format=2]
+[gd_scene load_steps=6 format=3 uid="uid://q47wd0m5kpmo"]
 
-[ext_resource path="res://minimirage/font/Font.tres" type="DynamicFont" id=1]
-[ext_resource path="res://minimirage/art/textbox_adv.png" type="Texture" id=2]
-[ext_resource path="res://minimirage/shader/CutsceneImageShader.gdshader" type="Shader" id=3]
+[ext_resource type="FontFile" uid="uid://e3bb4w7yv6ja" path="res://minimirage/font/Font.tres" id="1"]
+[ext_resource type="Texture2D" uid="uid://d2qc8eefcloir" path="res://minimirage/art/textbox_adv.png" id="2"]
+[ext_resource type="FontFile" uid="uid://d13qvslg060a7" path="res://minimirage/font/Oxanium-Regular.ttf" id="2_870jb"]
+[ext_resource type="Shader" path="res://minimirage/shader/CutsceneImageShader.gdshader" id="3"]
 
-[sub_resource type="ShaderMaterial" id=1]
-shader = ExtResource( 3 )
-shader_param/is_background = false
-shader_param/position = Vector2( 0, 0 )
-shader_param/scale = Vector2( 1, 1 )
-shader_param/rotation = 0.0
-shader_param/screen_size = Vector2( 150, 150 )
+[sub_resource type="ShaderMaterial" id="1"]
+shader = ExtResource("3")
+shader_parameter/is_background = false
+shader_parameter/position = Vector2(0, 0)
+shader_parameter/scale = Vector2(1, 1)
+shader_parameter/rotation = 0.0
+shader_parameter/screen_size = Vector2(150, 150)
 
 [node name="Textbox" type="TextureRect"]
+anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-margin_left = -640.0
-margin_top = -212.0
-margin_right = 640.0
-texture = ExtResource( 2 )
-stretch_mode = 1
+offset_left = -640.0
+offset_top = -212.0
+offset_right = 640.0
+grow_horizontal = 2
+grow_vertical = 0
+texture = ExtResource("2")
+expand_mode = 1
 
 [node name="Label" type="RichTextLabel" parent="."]
+clip_contents = false
+layout_mode = 1
+anchors_preset = -1
 anchor_left = 0.5
 anchor_right = 0.5
 anchor_bottom = 1.0
-margin_left = -385.0
-margin_top = 70.0
-margin_right = 385.0
-margin_bottom = -25.0
-rect_clip_content = false
-custom_constants/line_separation = 4
-custom_fonts/normal_font = ExtResource( 1 )
+offset_left = -385.0
+offset_top = 70.0
+offset_right = 385.0
+offset_bottom = -25.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/line_separation = 4
+theme_override_constants/outline_size = 8
+theme_override_fonts/normal_font = ExtResource("2_870jb")
+theme_override_font_sizes/normal_font_size = 24
 bbcode_enabled = true
-bbcode_text = "From here to there to the ends of the earth, I will be there!
-Over and over and over and over...
-Until hell freezes over!
-Until time itself stops!"
 text = "From here to there to the ends of the earth, I will be there!
 Over and over and over and over...
 Until hell freezes over!
 Until time itself stops!"
+visible_characters_behavior = 1
 
 [node name="Portrait" type="TextureRect" parent="."]
-material = SubResource( 1 )
+texture_filter = 6
+material = SubResource("1")
+layout_mode = 0
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-margin_left = -547.0
-margin_top = -162.0
-margin_right = -397.0
-margin_bottom = -12.0
-expand = true
+offset_left = -547.0
+offset_top = -162.0
+offset_right = -397.0
+offset_bottom = -12.0
+expand_mode = 1
 
 [node name="Nametag" type="Label" parent="."]
+layout_mode = 0
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-margin_left = -368.0
-margin_top = -181.0
-margin_right = -304.0
-margin_bottom = -156.0
-custom_fonts/font = ExtResource( 1 )
+offset_left = -368.0
+offset_top = -181.0
+offset_right = -304.0
+offset_bottom = -156.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("1")
+theme_override_font_sizes/font_size = 24

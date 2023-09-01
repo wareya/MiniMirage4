@@ -4,7 +4,7 @@ uniform bool is_background = false;
 uniform vec2 position = vec2(0.0, 0.0);
 uniform vec2 scale = vec2(1.0, 1.0);
 uniform float rotation = 0.0;
-uniform vec2 screen_size;
+uniform vec2 screen_size = vec2(1280.0, 720.0);
 
 const float TORAD = 3.1415926535/180.0;
 
@@ -45,7 +45,6 @@ void vertex()
 
 void fragment()
 {
-    COLOR = texture(TEXTURE, UV);
     if (!is_background && (UV.x < 0.0 || UV.y < 0.0 || UV.x > 1.0 || UV.y > 1.0))
         COLOR = vec4(0.0);
 }

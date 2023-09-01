@@ -1,4 +1,8 @@
-extends Reference
+extends RefCounted
+
+func _notification(what: int) -> void:
+    if what == NOTIFICATION_PREDELETE:
+        print("deleting cutscene!!!!!!!!!!")
 
 func demo_cutscene(cutscene : CutsceneInstance):
     var bg_texture = load("res://minimirage/art/test_bg.jpg")
@@ -14,89 +18,72 @@ func demo_cutscene(cutscene : CutsceneInstance):
     var bg_image = cutscene.add_background(bg_texture)
     
     print("showing bg")
-    cutscene.image_show(bg_image)
-    yield(bg_image, "transition_finished")
+    await bg_image.fade_show()
     print("and it's done")
     
-    cutscene.set_text("Something approaches.")
-    yield(cutscene, "cutscene_continue")
+    await cutscene.set_text("Something approaches.")
     
     cutscene.set_nametag("???")
     
-    cutscene.set_text("Wow! What is that?")
-    yield(cutscene, "cutscene_continue")
+    await cutscene.set_text("Wow! What is that?")
     
     cutscene.clear_text()
     cutscene.set_nametag("Guide")
     
     var image = cutscene.add_tachie(tachie_a)
     cutscene.adv_set_face(face_a)
-    cutscene.image_set_position(image, Vector2(-0.5, 0.0))
+    image.set_new_position(Vector2(-0.5, 0.0))
     
-    cutscene.image_show(image)
-    yield(image, "transition_finished")
+    await image.fade_show()
     
-    cutscene.set_text("Wait, it's not...? It can't be!")
-    yield(cutscene, "cutscene_continue")
+    await cutscene.set_text("Wait, it's not...? It can't be!")
     
     cutscene.clear_text()
-    cutscene.image_set_texture(image, tachie_b)
-    cutscene.image_set_scale(image, Vector2(-1.2, 1.2))
+    image.set_new_texture(tachie_b)
+    image.set_new_scale(Vector2(-1.2, 1.2))
     cutscene.adv_set_face(face_b)
     
-    cutscene.image_smooth_position(image, Vector2(0.0, 0.0))
-    yield(image, "transition_finished")
+    await image.smooth_position(Vector2(0.0, 0.0))
     
-    cutscene.set_text("Oh my god, why didn't you tell me about this!")
-    yield(cutscene, "cutscene_continue")
+    await cutscene.set_text("Oh my god, why didn't you tell me about this!")
     
     cutscene.textbox_set_chat(Vector2(0.05, -0.4))
     
-    cutscene.set_text("This... This is good.")
-    yield(cutscene, "cutscene_continue")
+    await cutscene.set_text("This... This is good.")
     
-    cutscene.image_set_texture(image, tachie_c)
+    image.set_texture(tachie_c)
     cutscene.adv_set_face(face_c)
     
-    cutscene.set_text("But you know--this isn't all there is to life.")
-    yield(cutscene, "cutscene_continue")
+    await cutscene.set_text("But you know--this isn't all there is to life.")
     
     cutscene.clear_text()
     
-    cutscene.textbox_hide()
-    yield(cutscene, "textbox_transition_finished")
+    await cutscene.textbox_hide()
     
-    cutscene.image_set_texture(image, tachie_a)
+    image.set_new_texture(tachie_a)
     cutscene.adv_set_face(face_a)
     
-    cutscene.image_smooth_scale(image, Vector2(-1.0, 1.0))
-    yield(image, "transition_finished")
+    await image.smooth_scale(Vector2(-1.0, 1.0))
     
-    cutscene.image_smooth_position(image, Vector2(0.3, 0.0))
-    yield(image, "transition_finished")
+    await image.smooth_position(Vector2(0.3, 0.0))
     
-    cutscene.image_set_scale(image, Vector2(1.0, 1.0))
+    image.set_new_scale(Vector2(1.0, 1.0))
     cutscene.textbox_set_chat(Vector2(0.3, -0.35), "upright")
     
-    cutscene.set_text("You need to stop and smell the roses. Listen to the music. Help out a friend or two. That kind of thing.")
-    yield(cutscene, "cutscene_continue")
+    await cutscene.set_text("You need to stop and smell the roses. Listen to the music. Help out a friend or two. That kind of thing.")
     
-    cutscene.textbox_hide()
-    yield(cutscene, "textbox_transition_finished")
+    await cutscene.textbox_hide()
     
-    cutscene.image_hide(image)
-    yield(image, "transition_finished")
+    await image.fade_hide()
     
     cutscene.textbox_set_chat(Vector2(0.5, 0.3), "downright")
     cutscene.chat_set_face(face_a)
     
-    cutscene.set_text("I'll be off, now!")
-    yield(cutscene, "cutscene_continue")
+    await cutscene.set_text("I'll be off, now!")
     
     cutscene.chat_set_face(face_b, true)
     
-    cutscene.set_text("Take care!")
-    yield(cutscene, "cutscene_continue")
+    await cutscene.set_text("Take care!")
     
     # Always call this at the end of the cutscene.
     cutscene.finish()
