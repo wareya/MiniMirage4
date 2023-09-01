@@ -1,12 +1,38 @@
-# Mini Mirage
+# Mini Mirage 
 
-Mini Mirage is a public domain and lightweight VN-style cutscene engine (not meant for actual VNs) for Godot 3.
+Mini Mirage is a public domain and lightweight VN-style cutscene engine (not meant for actual VNs). This is the Godot 4 version.
+
+Features: showing backgrounds/CGs, tachie (standing sprites), smooth zooming/scaling, smooth repositioning, both NVL and chat-bubble-style textboxes, textbox portraits/nametags, and arbitrary game code in the middle of cutscenes (cutscenes are just gdscript functions).
 
 Don't try to use this for actual VNs. It's missing a large number of essential VN features, like transition masks, saving mid-cutscene, a backlog, etc.
 
 ![image](files/screenshot.png)
 
+Example cutscene:
+
+```gdscript
+func mini_demo_cutscene(cutscene : CutsceneInstance):
+    var bg_texture = load("res://minimirage/art/test_bg.jpg")
+    var tachie = load("res://minimirage/art/tachie/vn engine test tachie base.png")
+    
+    var bg_image = cutscene.add_background(bg_texture)
+    await bg_image.fade_show()
+    
+    var image = cutscene.add_tachie(tachie)
+    await image.fade_show()
+    
+    cutscene.set_nametag("Guide")
+    
+    await cutscene.set_text("Hello, world!")
+    
+    cutscene.finish()
+```
+
 ## Docs
+
+Copy the `minimirage` folder into your project. See `Demo.tscn` for example usage. Skim the comments in the `.gd` files in `minimirage/scenes/` to get a feel for what the API looks like.
+
+The Godot 3 version of Mini Mirage uses static functions on CutsceneInstance to handle tachie/background changes. The Godot 4 version uses async functions on each CutsceneRect object instead.
 
 Custom input actions you can add: 
 
@@ -22,263 +48,3 @@ Custom input actions you can add:
 
 (common example: ctrl. please do not put this on alt.)
 
-### CutsceneStarter Methods List
-
-See `Demo.gd` for an example of how to use CutsceneStarter.
-
-`static CutsceneInstance load_and_start_cutscene(filename: String, function_name: String)`
-
-`static CutsceneInstance start_cutscene(script: Object, function_name: String)`
-
-### CutsceneStarter Method Descriptions
-
-`static CutsceneInstance load_and_start_cutscene(filename: String, function_name: String)`
-
-Starts a cutscene function (from a script file) with a new CutsceneInstance. Returns the new CutsceneInstance to control the new cutscene.
-
-`static CutsceneInstance start_cutscene(script: Object, function_name: String)`
-
-Starts a cutscene function (from an object) with a new CutsceneInstance. Returns the new CutsceneInstance to control the new cutscene.
-
-### CutsceneInstance Methods List
-
-- `static bool cutscene_is_running()`
-- `static bool should_advance_input()`
-- `static bool should_skip_anims()`
-- `static bool should_use_instant_text()`
-- `TextureRect add_background(texture: Texture)`
-- `TextureRect add_tachie(texture: Texture)`
-- `void adv_set_face(face: Texture, flipped: bool)`
-- `void chat_set_face(face: Texture, flipped: bool)`
-- `void clear_text()`
-- `void finish()`
-- `void fix_chatbox_size(size: Vector2)`
-- `void image_destroy(tr: TextureRect)`
-- `static void image_hide(tr: TextureRect, speed: float)`
-- `static void image_set_position(tr: TextureRect, pos: Vector2)`
-- `static void image_set_scale(tr: TextureRect, scale: Vector2)`
-- `static void image_set_texture(tr: TextureRect, tex: Texture)`
-- `static void image_show(tr: TextureRect, speed: float)`
-- `static void image_smooth_position(tr: TextureRect, pos: Vector2, speed: float)`
-- `static void image_smooth_scale(tr: TextureRect, scale: Vector2, speed: float)`
-- `void set_nametag(tag: String)`
-- `void set_text(text: String)`
-- `void textbox_hide()`
-- `void textbox_set_adv()`
-- `void textbox_set_chat(pos: Vector2, orientation: String)`
-- `void textbox_show()`
-
-### CutsceneInstance Signals
-
-- `cutscene_continue()`
-
-Emitted when the user signals intent to continue the cutscene, e.g. by pressing confirm when the textbox has finished being typed in.
-
-- `cutscene_finished()`
-
-Emitted when the cutscene is finished.
-
-- `textbox_transition_finished()`
-
-Emitted when the textbox has finished being shown or hidden.
-
-### CutsceneInstance Constants (that you can change)
-
-- `typein_speed = 90`
-
-Rate at which new characters are added to the textbox per second.
-
-- ` skip_rate = 20`
-
-Number of textboxes to skip per second when skipping.
-
-Note: skipping is slowed down by one frame per other animation (tachie/background transitions etc).
-
-- `tachie_fade_speed = 3`
-
-Speed at which tachie (standing sprites) fade in. Higher values make them take less time. Reciprocal of seconds.
-
-- `bg_fade_speed = 1.5`
-
-Speed at which backgrounds fade in.
-
-- `textbox_fade_speed = 4`
-
-Speed at which the textbox fades in.
-
-- `tachie_move_speed = 4`
-
-Speed at which images move when smoothly moved. Reciprocal of seconds.
-
-- `bg_move_speed = 0.5`
-
-Speed at which images move when smoothly moved. Reciprocal of seconds.
-
-### CutsceneInstance Method Descriptions
-
-- `void cutscene_is_running()`
-
-Call to check whether any cutscenes are currently running. 
-
-For example, you can use this function to ignore input or pause the game when cutscenes are running.
-
-- `static void should_advance_input()`
-
-Returns whether the CutsceneInstance intends to advance the cutscene, based on user input.
-
-- `static void should_skip_anims()`
-
-Returns whether the CutsceneInstance intends to skip animations, based on user input.
-
-- `static void should_use_instant_text()`
-
-Returns whether the CutsceneInstance intends to make text come in instantly, based on user input.
-
-- `TextureRect add_background(texture: Texture)`
-
-Adds a background to the scene, returning an image. 
-
-Disclaimer: images are just TextureRects with special materials and signals attached.
-
-- `TextureRect add_tachie(texture: Texture)`
-
-Adds a tachie (standing sprite) to the scene, returning an image. 
-
-Disclaimer: images are just TextureRects with special materials and signals attached.
-
-- `void adv_set_face(face: Texture, flipped: bool)`
-
-If in ADV mode, set the face of the next textboxes. Pass null to clear it. 
-
-Applies instantly.
-
-- `void chat_set_face(face: Texture, flipped: bool)`
-
-If in chat-bubble mode, set the face of the next textboxes. Pass null to clear it. 
-
-Applies instantly.
-
-- `void clear_text()`
-
-Clears the textbox.
-
-- `void finish()`
-
-Call at the end of the cutscene to ensure proper cleanup.
-
-- `void fix_chatbox_size(size: Vector2)`
-
-Used internally. However, if the chatbox size for a given message is too small, you can use this function to override it.
-
-- `void image_destroy(tr: TextureRect)`
-
-Destroy an image, removing it from the scene and freeing its memory. 
-
-The underlying texture will continue to exist until you stop using it (write null to whatever variable contains it). If you don't have the texture in a variable anywhere, then it will be freed immediately.
-
-- `static void image_hide(tr: TextureRect, speed: float)`
-
-Hide the given image, playing a fade-out animation. 
-
-Wait instruction: 
-
-`yield(image, "transition_finished")`
-
-- `static void image_set_position(tr: TextureRect, pos: Vector2)`
-
-Set the position for the given image. 
-
-Positions are based on the height of the cutscene screen, with 1.0 representing the distance from the center of the screen to the top or bottom. 
-
-So, a position of Vector2(1.0, 0.0) is only about half way towards the right side of a 16:9 screen. 
-
-Applies instantly.
-
-- `static void image_set_scale(tr: TextureRect, scale: Vector2)`
-
-Set the scale for the given image. 
-
-Applies instantly.
-
-- `static void image_set_texture(tr: TextureRect, tex: Texture)`
-
-Set the texture for the given image. 
-
-Applies instantly.
-
-- `static void image_show(tr: TextureRect, speed: float)`
-
-Show the given image, playing a fade-in animation. 
-
-Wait instruction: 
-
-`yield(image, "transition_finished")`
-
-- `void static image_smooth_position(tr: TextureRect, pos: Vector2, speed: float)`
-
-Set the position for the given image smoothly. See image_set_position() for more information. 
-
-Wait instruction: 
-
-`yield(image, "transition_finished")`
-
-- `void static image_smooth_scale(tr: TextureRect, scale: Vector2, speed: float)`
-
-Set the scale for the given image smoothly. 
-
-Wait instruction: 
-
-`yield(image, "transition_finished")`
-
-- `void set_nametag(tag: String)`
-
-Sets the speaker name. To empty, set to an empty string: "" 
-
-Applies instantly. However, the nametag is only visible when text is drawn.
-
-- `void set_text(text: String)`
-
-Sets the textbox and makes the cutscene instance start to type in the new text and wait for input. 
-
-To wait for the cutscene instance to get input from the user, use the following wait command: 
-
-`yield(instance, "cutscene_continue")`
-
-- `void textbox_hide()`
-
-Hide the current text box, playing a fade-out animation. 
-
-Wait instruction: 
-
-`yield(CutsceneInstance, "textbox_transition_finished")`
-
-- `void textbox_set_adv()`
-
-Switches to the ADV-style textbox. 
-
-Applies instantly.
-
-- `void textbox_set_chat(pos: Vector2, orientation: String)`
-
-Switches to the chat-bubble-style textbox. 
-
-Applies instantly.
-
-- `void textbox_show()`
-
-Show the current text box, playing a fade-in animation. 
-
-Wait instruction: 
-
-`yield(CutsceneInstance, "textbox_transition_finished")`
-
-
-## Credits / License
-
-Aside from the background image, which was made available by its creator under the Creative Commons Zero license on Flickr (at time of obtainment), and the font (Oxanium, licensed under the OFL, the standard open-source font license), everything in this project was made by me.
-
-Everything made by me in this project, and everything that I obtained under the Creative Commons Zero license, is hereby released under the Creative Commons Zero license. You can use it all for any purpose without crediting me or doing anything special whatsoever. LICENSE.txt, a copy of the Creative Commons Zero 1.0 legal code, hereby applies to all relevant files.
-
-In short: you can use this project however you want and do whatever you want with it (except for keeping other people from using it), almost as if you'd made it yourself.
-
-However, keep in mind that Godot itself is licensed under the MIT license, so when you release a game/VN based on this project, you need to include its license texts alongside your game/VN in some form. The MIT license is permissive and not 'viral'; it does not restrict what you're allowed to do with your own code, or with this project's code. All you need to do is include the license text. For full instructions on complying with the licenses of Godot and its dependencies, see [this page](https://docs.godotengine.org/en/stable/about/complying_with_licenses.html) and [this page](https://godotengine.org/license).

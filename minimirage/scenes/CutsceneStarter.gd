@@ -1,11 +1,5 @@
 class_name CutsceneStarter
 
-# used internally to work around a godot 4.0/4.1 bug:
-# https://github.com/godotengine/godot/issues/81210
-static func _refcount_holder(refcount : RefCounted, callable : Callable):
-    var temp = refcount
-    await callable.call()
-
 ## Starts a cutscene function (from a script file) with a new CutsceneInstance.
 ## [br]
 ## Returns the new CutsceneInstance to control the new cutscene.
@@ -57,3 +51,9 @@ static func start_cutscene(callable : Callable):
     
     # on your end: wait for the cutscene to finish
     #yield(cutscene, "cutscene_finished")
+
+# used internally to work around a godot 4.0/4.1 bug:
+# https://github.com/godotengine/godot/issues/81210
+static func _refcount_holder(refcount : RefCounted, callable : Callable):
+    var temp = refcount
+    await callable.call()

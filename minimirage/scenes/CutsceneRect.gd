@@ -1,19 +1,6 @@
 extends TextureRect
 class_name CutsceneRect
 
-func _init():
-    expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-    
-    stretch_mode = STRETCH_KEEP_ASPECT_CENTERED
-    anchor_right = 1
-    anchor_bottom = 1
-    offset_right = 0
-    offset_bottom = 0
-    
-    material = preload("../shader/CutsceneImageMat.tres").duplicate()
-    
-    texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-
 ## Used internally. Do not use externally.
 ## Async.
 static func item_smooth_param_vec2(item : CanvasItem, param : String, vec2 : Vector2, speed : float):
@@ -121,5 +108,20 @@ func fade_show(speed : float = 0.0):
     await CutsceneRect.item_transition(self, "modulate:a", 0.0, 1.0, speed)
     print("done fading item")
 
+# -- internals --
+
 func _process(delta : float):
     material.set_shader_parameter("screen_size", get_parent().dummy_control.size)
+
+func _init():
+    expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    
+    stretch_mode = STRETCH_KEEP_ASPECT_CENTERED
+    anchor_right = 1
+    anchor_bottom = 1
+    offset_right = 0
+    offset_bottom = 0
+    
+    material = preload("../shader/CutsceneImageMat.tres").duplicate()
+    
+    texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC

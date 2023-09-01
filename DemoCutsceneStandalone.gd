@@ -4,6 +4,22 @@ func _notification(what: int) -> void:
     if what == NOTIFICATION_PREDELETE:
         print("deleting cutscene!!!!!!!!!!")
 
+func mini_demo_cutscene(cutscene : CutsceneInstance):
+    var bg_texture = load("res://minimirage/art/test_bg.jpg")
+    var tachie = load("res://minimirage/art/tachie/vn engine test tachie base.png")
+    
+    var bg_image = cutscene.add_background(bg_texture)
+    await bg_image.fade_show()
+    
+    var image = cutscene.add_tachie(tachie)
+    await image.fade_show()
+    
+    cutscene.set_nametag("Guide")
+    
+    await cutscene.set_text("Hello, world!")
+    
+    cutscene.finish()
+
 func demo_cutscene(cutscene : CutsceneInstance):
     var bg_texture = load("res://minimirage/art/test_bg.jpg")
     
