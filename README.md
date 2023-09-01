@@ -2,7 +2,7 @@
 
 Mini Mirage is a public domain and lightweight VN-style cutscene engine (not meant for actual VNs). This is the Godot 4 version.
 
-Features: showing backgrounds/CGs, tachie (standing sprites), smooth zooming/scaling, smooth repositioning, both NVL and chat-bubble-style textboxes, textbox portraits/nametags, and arbitrary game code in the middle of cutscenes (cutscenes are just gdscript functions).
+Features: showing backgrounds/CGs, tachie (standing sprites), smooth zooming/scaling, smooth repositioning, both ADV and chat-bubble-style textboxes, textbox portraits/nametags, and arbitrary game code in the middle of cutscenes (cutscenes are just gdscript functions).
 
 Don't try to use this for actual VNs. It's missing a large number of essential VN features, like transition masks, saving mid-cutscene, a backlog, etc.
 
