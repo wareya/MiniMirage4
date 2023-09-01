@@ -14,8 +14,8 @@ func _init():
     
     texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 
-# Used internally.
-# Async.
+## Used internally. Do not use externally.
+## Async.
 static func item_smooth_param_vec2(item : CanvasItem, param : String, vec2 : Vector2, speed : float):
     var start_vec2 : Vector2 = item.material.get_shader_parameter(param)
     
@@ -40,43 +40,43 @@ static func item_smooth_param_vec2(item : CanvasItem, param : String, vec2 : Vec
 var is_bg : bool = false
 
 ## Set the position for the given image.
-##
+## [br]
 ## Positions are based on the height of the cutscene screen, with 1.0 representing
 ## the distance from the center of the screen to the top or bottom.
-##
+## [br]
 ## So, a position of Vector2(1.0, 0.0) is only about half way towards the right side
 ## of a 16:9 screen.
-##
+## [br]
 ## Applies instantly.
 func set_new_position(pos : Vector2):
     material.set_shader_parameter("position", pos)
 
 ## Set the position for the given image smoothly. See `image_set_position` for more information.
-##
+## [br]
 ## Async.
 func smooth_position(pos : Vector2, speed : float = 0.0):
     await CutsceneRect.item_smooth_param_vec2(self, "position", pos, speed if speed > 0.0 else (CutsceneInstance.bg_move_speed if is_bg else CutsceneInstance.tachie_move_speed))
 
 ## Set the scale for the given image.
-##
+## [br]
 ## Applies instantly.
 func set_new_scale(new_scale : Vector2):
     material.set_shader_parameter("scale", new_scale)
 
 ## Set the scale for the given image smoothly.
-##
+## [br]
 ## Async.
 func smooth_scale(new_scale : Vector2, speed : float = 0.0):
     await CutsceneRect.item_smooth_param_vec2(self, "scale", new_scale, speed if speed > 0.0 else (CutsceneInstance.bg_move_speed if is_bg else CutsceneInstance.tachie_move_speed))
 
 ## Set the texture for the given image.
-##
+## [br]
 ## Applies instantly.
 func set_new_texture(tex : Texture2D):
     texture = tex
 
-# Used internally.
-# Async.
+## Used internally. Do not use externally.
+## Async.
 static func item_transition(item : CanvasItem, property : String, start, end, speed):
     item.set_indexed(property, start)
     
@@ -96,25 +96,25 @@ static func item_transition(item : CanvasItem, property : String, start, end, sp
         if !is_instance_valid(item):
             return
 
-# Used internally.
-# Async.
+## Used internally. Do not use externally.
+## Async.
 static func item_hide(item : CanvasItem, speed : float):
     await CutsceneRect.item_transition(item, "modulate:a", 1.0, 0.0, speed)
 
-# Used internally.
-# Async.
+## Used internally. Do not use externally.
+## Async.
 static func item_show(item : CanvasItem, speed : float):
     await CutsceneRect.item_transition(item, "modulate:a", 0.0, 1.0, speed)
 
 ## Hide the given image, playing a fade-out animation.
-##
+## [br]
 ## Async.
 func fade_hide(speed : float = 0.0):
     speed = speed if speed > 0.0 else (CutsceneInstance.bg_fade_speed if is_bg else CutsceneInstance.tachie_fade_speed)
     await CutsceneRect.item_transition(self, "modulate:a", 1.0, 0.0, speed)
 
 ## Show the given image, playing a fade-in animation.
-##
+## [br]
 ## Async.
 func fade_show(speed : float = 0.0):
     speed = speed if speed > 0.0 else (CutsceneInstance.bg_fade_speed if is_bg else CutsceneInstance.tachie_fade_speed)
@@ -123,4 +123,3 @@ func fade_show(speed : float = 0.0):
 
 func _process(delta : float):
     material.set_shader_parameter("screen_size", get_parent().dummy_control.size)
-    

@@ -54,7 +54,7 @@ func demo_cutscene(cutscene : CutsceneInstance):
     image.set_texture(tachie_c)
     cutscene.adv_set_face(face_c)
     
-    await cutscene.set_text("But you know--this isn't all there is to life.")
+    await cutscene.set_text("But you know—this isn't all there is to see in life.")
     
     cutscene.clear_text()
     

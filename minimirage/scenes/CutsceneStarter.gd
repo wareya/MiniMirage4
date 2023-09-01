@@ -7,6 +7,7 @@ static func _refcount_holder(refcount : RefCounted, callable : Callable):
     await callable.call()
 
 ## Starts a cutscene function (from a script file) with a new CutsceneInstance.
+## [br]
 ## Returns the new CutsceneInstance to control the new cutscene.
 static func load_and_start_cutscene(filename : String, function_name : String):
     # create a CutsceneInstance to keep track of the cutscene and add it to the scene
@@ -35,6 +36,7 @@ static func load_and_start_cutscene(filename : String, function_name : String):
     #yield(cutscene, "cutscene_finished")
 
 ## Starts a callable with a new CutsceneInstance.
+## [br]
 ## Returns the new CutsceneInstance to control the new cutscene.
 static func start_cutscene(callable : Callable):
     # create a CutsceneInstance to keep track of the cutscene and add it to the scene

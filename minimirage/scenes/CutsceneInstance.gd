@@ -25,8 +25,7 @@ const tachie_move_speed = 4.0
 # Speed at which images move when smoothly moved. Reciprocal of seconds.
 const bg_move_speed = 0.5
 
-
-# Used internally.
+# Emitted when the cutscene is ready to continue. You usually don't need to touch this directly.
 signal cutscene_continue
 
 ## Emitted when the cutscene is finished.
@@ -42,14 +41,14 @@ static func globalpos_to_screen_fraction(vec : Vector2):
     return fraction_vec
 
 ## Call to check whether any cutscenes are currently running.
-##
+## [br]
 ## For example, you can use this function to ignore input or pause the game when cutscenes are running.
 static func cutscene_is_running():
     return Engine.get_main_loop().get_nodes_in_group("CutsceneInstance").size() > 0
 
 ## Sets the textbox and makes the cutscene instance start to type in the new text and wait for input.
-##
-##  Async. Example: `await my_cutscene_instance.set_text("Hello!!!")`
+## [br]
+## Async. Example: `await my_cutscene_instance.set_text("Hello!!!")`
 func set_text(text : String):
     var label = current_textbox.get_node("Label")
     
@@ -60,7 +59,7 @@ func set_text(text : String):
         label.offset_left = _chat_textbox_alignment
         chat_portrait.visible = false
         
-        var size = estimate_good_chat_size()
+        var size = _estimate_good_chat_size()
         
         if chat_portrait.texture:
             chat_portrait.visible = true
@@ -75,10 +74,10 @@ func set_text(text : String):
     if current_textbox.modulate.a < 1.0:
         textbox_show()
     
-    visible_characters = 0.0
+    _visible_characters = 0.0
     if CutsceneInstance.should_skip_anims() or CutsceneInstance.should_use_instant_text():
-        visible_characters = -1
-    label.visible_characters = int(visible_characters)
+        _visible_characters = -1
+    label.visible_characters = int(_visible_characters)
     
     await cutscene_continue
 
@@ -111,7 +110,7 @@ func add_background(texture : Texture2D) -> CutsceneRect:
     return rect
 
 ## Hide the current text box, playing a fade-out animation.
-##
+## [br]
 ## Async.
 func textbox_hide():
     await CutsceneRect.item_hide(current_textbox, textbox_fade_speed)
@@ -119,13 +118,13 @@ func textbox_hide():
     adv_portrait.texture = null
 
 ## Show the current text box, playing a fade-in animation.
-##
+## [br]
 ## Async.
 func textbox_show():
     await CutsceneRect.item_show(current_textbox, textbox_fade_speed)
 
 ## Switches to the ADV-style textbox.
-##
+## [br]
 ## Applies instantly.
 func textbox_set_adv():
     current_textbox = adv_textbox
@@ -135,7 +134,7 @@ func textbox_set_adv():
     adv_portrait.texture = null
 
 # used internally.
-func estimate_good_chat_size():
+func _estimate_good_chat_size():
     var ideal_ar = 2
     
     var label : RichTextLabel = (chat_textbox.get_node("Label") as RichTextLabel)
@@ -188,7 +187,7 @@ var chat_pos : Vector2 = Vector2()
 var chat_orientation : String = "upleft"
 
 ## If in chat-bubble mode, set the face of the next textboxes. Pass `null` to clear it.
-##
+## [br]
 ## Applies instantly.
 func chat_set_face(face : Texture2D, flipped : bool = false):
     chat_portrait.texture = face
@@ -198,7 +197,7 @@ func chat_set_face(face : Texture2D, flipped : bool = false):
         chat_portrait.material.set_shader_parameter("scale", Vector2(1.0, 1.0))
 
 ## If in ADV mode, set the face of the next textboxes. Pass `null` to clear it.
-##
+## [br]
 ## Applies instantly.
 func adv_set_face(face : Texture2D, flipped : bool = false):
     adv_portrait.texture = face
@@ -208,7 +207,7 @@ func adv_set_face(face : Texture2D, flipped : bool = false):
         adv_portrait.material.set_shader_parameter("scale", Vector2(1.0, 1.0))
 
 ## Switches to the chat-bubble-style textbox.
-##
+## [br]
 ## Applies instantly.
 func textbox_set_chat(pos : Vector2, orientation : String = "upleft"):
     current_textbox = chat_textbox
@@ -221,14 +220,14 @@ func textbox_set_chat(pos : Vector2, orientation : String = "upleft"):
     adv_portrait.texture = null
 
 ## Sets the speaker name. To empty, set to an empty string: `""`
-##
+## [br]
 ## Applies instantly. However, the nametag is only visible when text is drawn.
 func set_nametag(tag : String):
     adv_textbox.get_node("Nametag").text = tag
     chat_textbox.get_node("Nametag").text = tag
 
 ## Used internally.
-##
+## [br]
 ## However, if the automatic chatbox size for a given message is too small, you can use this function to override it.
 func fix_chatbox_size(size : Vector2):
     var label : RichTextLabel = chat_textbox.get_node("Label")
@@ -264,7 +263,7 @@ func fix_chatbox_size(size : Vector2):
     chat_textbox.material.set_shader_parameter("screen_size", size)
 
 ## Destroy an image, removing it from the scene and freeing its memory.
-##
+## [br]
 ## The underlying texture will continue to exist until you stop using it (write `null` to whatever variable contains it). If you don't have the texture in a variable anywhere, then it will be freed immediately.
 func image_destroy(rect : CutsceneRect):
     if rect in images:
@@ -287,8 +286,6 @@ class MultiAsyncAwaiter extends RefCounted:
 ## Call at the end of the cutscene to ensure proper cleanup.
 func finish():
     var funcs_to_wait = []
-    # .call() on async functions is to work around a godot 4.0/4.1 bug:
-    # https://github.com/godotengine/godot-proposals/issues/3469
     
     var waiter : MultiAsyncAwaiter = MultiAsyncAwaiter.new()
     for image in images:
@@ -344,58 +341,58 @@ func _ready():
     RenderingServer.canvas_item_set_z_index(adv_textbox.get_canvas_item(), 10)
     RenderingServer.canvas_item_set_z_index(chat_textbox.get_canvas_item(), 10)
 
-# Returns whether the CutsceneInstance intends to advance the cutscene, based on user input.
+## Returns whether the CutsceneInstance intends to advance the cutscene, based on user input.
 static func should_advance_input():
     var custom = false
     if InputMap.action_get_events("cutscene_advance").size() > 0:
         custom = Input.is_action_just_pressed("cutscene_advance")
     return custom or Input.is_action_just_pressed("ui_accept")
 
-# Returns whether the CutsceneInstance intends to skip animations, based on user input.
+## Returns whether the CutsceneInstance intends to skip animations, based on user input.
 static func should_use_instant_text():
     var custom = false
     if InputMap.action_get_events("cutscene_instant_text").size() > 0:
         custom = Input.is_action_just_pressed("cutscene_instant_text")
     return custom or Input.is_action_pressed("ui_cancel")
 
-# Returns whether the CutsceneInstance intends to make text come in instantly, based on user input.
+## Returns whether the CutsceneInstance intends to make text come in instantly, based on user input.
 static func should_skip_anims():
     var custom = false
     if InputMap.action_get_events("cutscene_skip").size() > 0:
         custom = Input.is_action_pressed("cutscene_skip")
     return custom or should_advance_input()
 
-var visible_characters : float = 0.0
-var skip_timer : float = 0.0
+var _visible_characters : float = 0.0
+var _skip_timer : float = 0.0
 func _process(delta):
     var label = current_textbox.get_node("Label")
     if label.is_visible_in_tree() and current_textbox.modulate.a == 1.0:
         if CutsceneInstance.should_use_instant_text():
-            visible_characters = label.get_total_character_count()
+            _visible_characters = label.get_total_character_count()
         
-        if visible_characters >= 0.0 and visible_characters < label.get_total_character_count():
-            visible_characters += delta * typein_speed
+        if _visible_characters >= 0.0 and _visible_characters < label.get_total_character_count():
+            _visible_characters += delta * typein_speed
         
         if CutsceneInstance.should_skip_anims():
-            skip_timer += delta
+            _skip_timer += delta
         else:
-            skip_timer = 0.0
+            _skip_timer = 0.0
         
-        var do_skip = skip_timer > 1.0/skip_rate
+        var do_skip = _skip_timer > 1.0/skip_rate
         
         var do_continue = false
         
         if CutsceneInstance.should_advance_input() or do_skip:
             if do_skip:
-                visible_characters = label.get_total_character_count()
+                _visible_characters = label.get_total_character_count()
                 do_continue = true
-            elif visible_characters >= 0.0 and visible_characters < label.get_total_character_count():
-                visible_characters = label.get_total_character_count()
+            elif _visible_characters >= 0.0 and _visible_characters < label.get_total_character_count():
+                _visible_characters = label.get_total_character_count()
             else:
                 do_continue = true
-            skip_timer = 0.0
+            _skip_timer = 0.0
         
-        label.visible_characters = int(visible_characters)
+        label.visible_characters = int(_visible_characters)
         
         adv_textbox.get_node("Nametag").visible_characters = -1
         chat_textbox.get_node("Nametag").visible_characters = -1
